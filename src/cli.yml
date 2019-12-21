@@ -1,0 +1,56 @@
+name: ds4io
+version: "0.1.0"
+author: Tyler T. <ttran9619@gmail.com>
+about: Reader program for DS4 controllers
+
+args:
+    - time:
+        short: t
+        long: time
+        help: Enables Time Output (milliseconds)
+    - gyro:
+        short: g
+        long: gyro
+        help: Enables Gyroscope Output
+    - accel:
+        short: a
+        long: accel
+        help: Enables Accelerometer Output
+    - jl:
+        long: jl
+        help: Enables Left Joystick Output
+    - jr:
+        long: jr
+        help: Enables Right Joystick Output
+    - trigger:
+        short: T
+        long: trigger
+        help: Enables Trigger(analog) Output
+    - bs:
+        long: bs
+        help: Enables Shape Button Output
+    - bd:
+        long: bd
+        help: Enables D-Pad Button Output
+    - bt:
+        long: bt
+        help: Enables Triger(digital) Button Output
+    - be:
+        long: be
+        help: Enables Extra Button Output
+
+groups:
+    - outputs:
+        required: true
+        multiple: true
+        args:
+            - time
+            - gyro
+            - accel
+            - jl
+            - jr
+            - trigger
+            - bs
+            - bd
+            - bt
+            - be
