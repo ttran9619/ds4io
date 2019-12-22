@@ -1,7 +1,8 @@
-pub const REPORT_LENGTH: usize = 64;
+pub const REPORT_LENGTH: usize = 79;
 
 pub struct DS4Report<'a> {
     buffer: &'a [u8],
+    bluetooth: bool
 }
 
 pub struct Joystick {
@@ -23,72 +24,94 @@ impl<'a> DS4Report<'a> {
         if buffer.len() < REPORT_LENGTH {
             None
         } else {
-            Some(DS4Report { buffer })
+            let bluetooth = buffer[0] == 0x11 && buffer[1] == 0xc0 && buffer[2] == 0x00;
+            Some(DS4Report { buffer, bluetooth })
         }
+    }
+
+    pub fn is_bluetooth(&self) -> bool {
+        self.bluetooth
     }
 
     // IMU
     pub fn get_accelerometer_z(&self) -> f32 {
-        raw_imu_to_g_force(read_u16(&self.buffer[13..]))
+        let idx = if self.is_bluetooth() { 15 } else { 13 };
+        raw_imu_to_g_force(read_u16(&self.buffer[idx..]))
     }
 
     pub fn get_accelerometer_y(&self) -> f32 {
-        raw_imu_to_g_force(read_u16(&self.buffer[15..]))
+        let idx = if self.is_bluetooth() { 17 } else { 15 };
+        raw_imu_to_g_force(read_u16(&self.buffer[idx..]))
     }
 
     pub fn get_accelerometer_x(&self) -> f32 {
-        raw_imu_to_g_force(read_u16(&self.buffer[17..]))
+        let idx = if self.is_bluetooth() { 19 } else { 17 };
+        raw_imu_to_g_force(read_u16(&self.buffer[idx..]))
     }
 
     pub fn get_gyroscope_z(&self) -> f32 {
-        raw_imu_to_g_force(read_u16(&self.buffer[23..]))
+        let idx = if self.is_bluetooth() { 25 } else { 23 };
+        raw_imu_to_g_force(read_u16(&self.buffer[idx..]))
     }
 
     pub fn get_gyroscope_y(&self) -> f32 {
-        raw_imu_to_g_force(read_u16(&self.buffer[21..]))
+        let idx = if self.is_bluetooth() { 23 } else { 21 };
+        raw_imu_to_g_force(read_u16(&self.buffer[idx..]))
     }
 
     pub fn get_gyroscope_x(&self) -> f32 {
-        raw_imu_to_g_force(read_u16(&self.buffer[19..]))
+        let idx = if self.is_bluetooth() { 21 } else { 19 };
+        raw_imu_to_g_force(read_u16(&self.buffer[idx..]))
     }
 
     // Joysticks
     pub fn get_left_joystick(&self) -> Joystick {
-        Joystick{ x: joystick_convert(self.buffer[1]), y: joystick_convert(self.buffer[2]) }
+        let x_idx = if self.is_bluetooth() { 3 } else { 1 };
+        let y_idx = if self.is_bluetooth() { 4 } else { 2 };
+        Joystick{ x: joystick_convert(self.buffer[x_idx]), y: joystick_convert(self.buffer[y_idx]) }
     }
 
     pub fn get_right_joystick(&self) -> Joystick {
-        Joystick{ x: joystick_convert(self.buffer[2]), y: joystick_convert(self.buffer[3]) }
+        let x_idx = if self.is_bluetooth() { 4 } else { 2 };
+        let y_idx = if self.is_bluetooth() { 5 } else { 3 };
+        Joystick{ x: joystick_convert(self.buffer[x_idx]), y: joystick_convert(self.buffer[y_idx]) }
     }
 
     // Analog triggers
     pub fn get_l2_trigger_analog(&self) -> u8 {
-        self.buffer[8]
+        let idx = if self.is_bluetooth() { 10 } else { 8 };
+        self.buffer[idx]
     }
 
     pub fn get_r2_trigger_analog(&self) -> u8 {
-        self.buffer[9]
+        let idx = if self.is_bluetooth() { 11 } else { 9 };
+        self.buffer[idx]
     }
 
     // Shape Buttons
     pub fn get_button_triangle(&self) -> bool {
-        check_bit( self.buffer[5], 7 )
+        let idx = if self.is_bluetooth() { 7 } else { 5 };
+        check_bit( self.buffer[idx], 7 )
     }
 
     pub fn get_button_circle(&self) -> bool {
-        check_bit( self.buffer[5], 6 )
+        let idx = if self.is_bluetooth() { 7 } else { 5 };
+        check_bit( self.buffer[idx], 6 )
     }
 
     pub fn get_button_cross(&self) -> bool {
-        check_bit( self.buffer[5], 5 )
+        let idx = if self.is_bluetooth() { 7 } else { 5 };
+        check_bit( self.buffer[idx], 5 )
     }
 
     pub fn get_button_square(&self) -> bool {
-        check_bit( self.buffer[5], 4 )
+        let idx = if self.is_bluetooth() { 7 } else { 5 };
+        check_bit( self.buffer[idx], 4 )
     }
 
     pub fn get_button_dpad(&self) -> Dpad {
-        match self.buffer[5] & 0x0f {
+        let idx = if self.is_bluetooth() { 7 } else { 5 };
+        match self.buffer[idx] & 0x0f {
             0b0000 => Dpad{ up: true,   right: false,   down: false,    left: false },
             0b0001 => Dpad{ up: true,   right: true,    down: false,    left: false },
             0b0010 => Dpad{ up: false,  right: true,    down: false,    left: false },
@@ -102,52 +125,64 @@ impl<'a> DS4Report<'a> {
     }
 
     pub fn get_button_r3(&self) -> bool {
-        check_bit( self.buffer[6], 7 )
+        let idx = if self.is_bluetooth() { 8 } else { 6 };
+        check_bit( self.buffer[idx], 7 )
     }
 
     pub fn get_button_l3(&self) -> bool {
-        check_bit( self.buffer[6], 6 )
+        let idx = if self.is_bluetooth() { 8 } else { 6 };
+        check_bit( self.buffer[idx], 6 )
     }
 
     pub fn get_button_options(&self) -> bool {
-        check_bit( self.buffer[6], 5 )
+        let idx = if self.is_bluetooth() { 8 } else { 6 };
+        check_bit( self.buffer[idx], 5 )
     }
 
     pub fn get_button_share(&self) -> bool {
-        check_bit( self.buffer[6], 4 )
+        let idx = if self.is_bluetooth() { 8 } else { 6 };
+        check_bit( self.buffer[idx], 4 )
     }
 
     pub fn get_button_r2(&self) -> bool {
-        check_bit( self.buffer[6], 3 )
+        let idx = if self.is_bluetooth() { 8 } else { 6 };
+        check_bit( self.buffer[idx], 3 )
     }
 
     pub fn get_button_l2(&self) -> bool {
-        check_bit( self.buffer[6], 2 )
+        let idx = if self.is_bluetooth() { 8 } else { 6 };
+        check_bit( self.buffer[idx], 2 )
     }
 
     pub fn get_button_r1(&self) -> bool {
-        check_bit( self.buffer[6], 1 )
+        let idx = if self.is_bluetooth() { 8 } else { 6 };
+        check_bit( self.buffer[idx], 1 )
     }
 
     pub fn get_button_l1(&self) -> bool {
-        check_bit( self.buffer[6], 0 )
+        let idx = if self.is_bluetooth() { 8 } else { 6 };
+        check_bit( self.buffer[idx], 0 )
     }
 
     pub fn get_button_touchpad(&self) -> bool {
-        check_bit( self.buffer[7], 1 )
+        let idx = if self.is_bluetooth() { 9 } else { 7 };
+        check_bit( self.buffer[idx], 1 )
     }
 
     pub fn get_button_playstation(&self) -> bool {
-        check_bit( self.buffer[7], 0 )
+        let idx = if self.is_bluetooth() { 9 } else { 7 };
+        check_bit( self.buffer[idx], 0 )
     }
 
     // Metadata
     pub fn get_report_id(&self) -> u8 {
-        self.buffer[0]
+        let idx = if self.is_bluetooth() { 2 } else { 0 };
+        self.buffer[idx]
     }
 
     pub fn get_report_count(&self) -> u8 {
-        self.buffer[7] >> 2
+        let idx = if self.is_bluetooth() { 9 } else { 7 };
+        self.buffer[idx] >> 2
     }
 }
 

@@ -43,6 +43,10 @@ fn process_loop(api: &hidapi::HidApi, matches: &clap::ArgMatches, dev_info: &hid
 
     let mut read_buffer = [0u8; ds4_report::REPORT_LENGTH];
 
+    // Required for bluetooth IMU data
+    read_buffer[0] = 0x2;
+    device.get_feature_report(&mut read_buffer[..])?;
+
     let start_time = Instant::now();
 
     loop {
